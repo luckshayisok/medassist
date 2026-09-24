@@ -88,7 +88,14 @@ cd mobile  && npm test && npx tsc --noEmit    # 23 unit tests
   "Verified information" only when it cites one of those passages; anything else is shown as general
   information. Indian names are mapped (paracetamol → acetaminophen, Dolo → acetaminophen…), and
   combination brands are never mapped to a single ingredient.
-- **Next:** caregiver linking, and offline, security and accessibility hardening.
+- **Phase 11:** caregivers. The patient opens Profile → Family & caregivers, picks what the helper may
+  do (get missed-dose alerts, add/change medicines) and gets an 8-character code (valid 48 h). The
+  caregiver enters it in their own app. Caregivers get a **People** home (today's doses and this week for
+  each person), a per-person view (today, week chart, medicines, "Add a medicine for …"), and **Alerts**.
+  Missed doses are worked out on the server when the caregiver's app asks (every few minutes while
+  open, and from the background task every ~30 min), stored once per dose, and shown as a phone
+  notification. The patient can change permissions or remove a caregiver at any time.
+- **Next:** offline, security and accessibility hardening; optional remote push (needs an FCM key).
 
 ## Testing reminders
 Expo Go on **Android** can't use notifications (Expo removed them in SDK 53). The app still runs there,

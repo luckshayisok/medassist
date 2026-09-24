@@ -11,7 +11,7 @@ export function useMedicationsQuery() {
   return useQuery({
     queryKey: medicationsKey(user?.id),
     queryFn: medicationsApi.list,
-    // Caregivers pick a patient in Phase 11; until then they have no list of their own.
+    // Caregivers have no list of their own; they see each person through the care screens.
     enabled: user?.role === 'PATIENT',
   });
 }
@@ -36,18 +36,23 @@ interface SaveArgs {
   photo: PhotoChange;
 }
 
-export function useSaveMedication() {
+export function useSaveMedication(patientId?: string) {
   const qc = useQueryClient();
   const userId = useAuth((s) => s.user?.id);
 
   return useMutation({
     mutationFn: async ({ id, version, input, photo }: SaveArgs) => {
-      let med = id ? await medicationsApi.update(id, { ...input, version: version! }) : await medicationsApi.create(input);
+      let med = id ? await medicationsApi.update(id, { ...input, version: version! }) : await medicationsApi.create(input, patientId);
       if (photo.kind === 'set') med = await medicationsApi.uploadImage(med.id, photo.uri);
       if (photo.kind === 'remove' && med.imageUrl) med = await medicationsApi.removeImage(med.id);
       return med;
     },
     onSuccess: (med) => {
+      if (patientId) {
+        // Saved for someone this caregiver looks after: refresh their view.
+        void qc.invalidateQueries({ queryKey: ['care'] });
+        return;
+      }
       qc.setQueryData<Medication[]>(medicationsKey(userId), (old = []) => {
         const rest = old.filter((m) => m.id !== med.id);
         return [...rest, med].sort((a, b) => a.name.localeCompare(b.name));

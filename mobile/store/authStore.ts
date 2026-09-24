@@ -3,6 +3,7 @@ import { setSessionExpiredHandler } from '@/services/api/client';
 import { authApi, deviceTimezone, type RegisterInput } from '@/services/auth/authApi';
 import { clearQueryCache } from '@/lib/queryClient';
 import { clearSession, loadSession, saveSession } from '@/services/auth/tokenStorage';
+import { clearCareNotified } from '@/services/care/alertNotifier';
 import { unregisterReminderRefresh } from '@/services/notifications/background';
 import { cancelAllReminders } from '@/services/notifications/reconcile';
 import { useDoseLogs } from '@/store/doseLogStore';
@@ -34,6 +35,7 @@ export const useAuth = create<AuthState>()((set, get) => {
       // No reminders for a signed-out user (they'd reveal medicine names on the lock screen).
       cancelAllReminders().catch(() => {}),
       unregisterReminderRefresh().catch(() => {}),
+      clearCareNotified().catch(() => {}),
     ]);
     useDoseLogs.setState({ logs: {} });
     set({ status: 'signedOut', user: null });

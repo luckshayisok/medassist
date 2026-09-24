@@ -65,6 +65,9 @@ export default function RootLayout() {
                 <Stack.Screen name="prescription/[id]/index" options={{ headerShown: false }} />
                 <Stack.Screen name="prescription/[id]/[index]" options={{ headerShown: false, presentation: 'modal' }} />
                 <Stack.Screen name="medication/[id]/edit" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="care/link" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="care/[patientId]" options={{ ...header, title: '' }} />
+                <Stack.Screen name="caregivers" options={{ ...header, title: 'Family & caregivers' }} />
               </Stack.Protected>
             </Stack>
           ) : (

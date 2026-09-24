@@ -1,7 +1,8 @@
 import Constants from 'expo-constants';
-import { LogOut, Trash2, UserRound } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { ChevronRight, HeartHandshake, LogOut, Trash2, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { SettingSwitch } from '@/components/accessibility/SettingSwitch';
 import { TextSizePicker } from '@/components/accessibility/TextSizePicker';
 import { BrandMark } from '@/components/common/BrandMark';
@@ -61,6 +62,25 @@ export default function ProfileScreen() {
       ) : null}
 
       <RemindersCard />
+
+      {user ? (
+        <Pressable
+          role="button"
+          onPress={() => router.push(user.role === 'PATIENT' ? '/caregivers' : '/care/link')}
+          className="min-h-20 flex-row items-center gap-3 rounded-[28px] bg-blush p-4 active:opacity-80"
+        >
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-card">
+            <Icon as={HeartHandshake} size={24} className="text-foreground" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-lg font-extrabold text-blush-foreground">{user.role === 'PATIENT' ? 'Family & caregivers' : 'Link a person'}</Text>
+            <Text className="font-medium text-blush-foreground opacity-80">
+              {user.role === 'PATIENT' ? 'Let someone you trust keep an eye on your medicines' : 'Enter the code they give you'}
+            </Text>
+          </View>
+          <Icon as={ChevronRight} size={22} className="text-blush-foreground" />
+        </Pressable>
+      ) : null}
 
       <Card>
         <CardHeader>

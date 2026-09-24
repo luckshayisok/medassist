@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DoseLog, Medication } from '@/types/medication';
+import { checkCareAlertsInBackground } from '@/services/care/alertNotifier';
 import { syncReminders } from './reconcile';
 import { notificationsSupported } from './setup';
 
 /**
  * Tops up the rolling reminder window even if the app isn't opened for days.
- * The OS runs this roughly every few hours (not exactly); scheduled reminders themselves fire on time.
+ * The OS runs this roughly every 30+ minutes (not exactly, and less often on battery saver);
+ * scheduled reminders themselves fire on time. For caregivers it also checks for missed doses.
  */
 export const REMINDER_REFRESH_TASK = 'medassist-refresh-reminders';
 
@@ -57,6 +59,8 @@ if (m) {
     try {
       const { medications, logs } = await readCachedState();
       await syncReminders(medications, logs);
+      // Caregivers: tell them about missed doses of the people they look after.
+      await checkCareAlertsInBackground().catch(() => {});
       return m.BackgroundTask.BackgroundTaskResult.Success;
     } catch {
       return m.BackgroundTask.BackgroundTaskResult.Failed;
@@ -67,7 +71,7 @@ if (m) {
 export async function registerReminderRefresh() {
   if (!m) return;
   if (await m.TaskManager.isTaskRegisteredAsync(REMINDER_REFRESH_TASK)) return;
-  await m.BackgroundTask.registerTaskAsync(REMINDER_REFRESH_TASK, { minimumInterval: 6 * 60 });
+  await m.BackgroundTask.registerTaskAsync(REMINDER_REFRESH_TASK, { minimumInterval: 30 });
 }
 
 export async function unregisterReminderRefresh() {

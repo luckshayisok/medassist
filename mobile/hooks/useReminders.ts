@@ -83,6 +83,11 @@ export function useReminders() {
       if (handled.current.has(id)) return;
       handled.current.add(id);
 
+      if ((response.notification.request.content.data as { kind?: string } | null)?.kind === 'care-alert') {
+        router.navigate('/alerts');
+        N.clearLastNotificationResponse();
+        return;
+      }
       const outcome = interpretResponse(response, medsRef.current);
       const logsApi = useDoseLogs.getState();
       if (outcome.type === 'taken') {

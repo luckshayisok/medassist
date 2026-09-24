@@ -17,7 +17,9 @@ async function photoFormData(localUri: string) {
 export const medicationsApi = {
   list: () => api<Medication[]>('/medications'),
   get: (id: string) => api<Medication>(`/medications/${id}`),
-  create: (input: MedicationInput) => api<Medication>('/medications', { method: 'POST', body: input }),
+  /** `patientId` when a caregiver adds a medicine for someone they look after. */
+  create: (input: MedicationInput, patientId?: string) =>
+    api<Medication>(patientId ? `/medications?patientId=${encodeURIComponent(patientId)}` : '/medications', { method: 'POST', body: input }),
   update: (id: string, patch: Partial<MedicationInput> & { version: number }) =>
     api<Medication>(`/medications/${id}`, { method: 'PATCH', body: patch }),
   remove: (id: string) => api<void>(`/medications/${id}`, { method: 'DELETE' }),

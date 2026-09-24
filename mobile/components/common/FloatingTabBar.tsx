@@ -1,18 +1,26 @@
 import { router, type Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { House, MessageCircleQuestion, Pill, Plus, UserRound, type LucideIcon } from 'lucide-react-native';
+import { Bell, House, MessageCircleQuestion, Pill, Plus, UserRound, type LucideIcon } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { useThemeColors } from '@/hooks/useAppearance';
+import { useAuth } from '@/store/authStore';
 import { useSettings } from '@/store/settingsStore';
 
 type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
-const META: Record<string, { label: string; icon: LucideIcon }> = {
+type Meta = Record<string, { label: string; icon: LucideIcon }>;
+const PATIENT_TABS: Meta = {
   index: { label: 'Home', icon: House },
   medicines: { label: 'Medicines', icon: Pill },
   assistant: { label: 'Ask', icon: MessageCircleQuestion },
+  profile: { label: 'Profile', icon: UserRound },
+};
+/** Caregivers look after others: their home is people, not a medicine list. */
+const CAREGIVER_TABS: Meta = {
+  index: { label: 'People', icon: House },
+  alerts: { label: 'Alerts', icon: Bell },
   profile: { label: 'Profile', icon: UserRound },
 };
 
@@ -27,6 +35,8 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const barBg = hc ? '#000' : '#1F1D1B';
   const inactive = hc ? '#FFFFFF' : '#B9B2A6';
   const active = c.blush;
+  const caregiver = useAuth((s) => s.user?.role) === 'CAREGIVER';
+  const META = caregiver ? CAREGIVER_TABS : PATIENT_TABS;
 
   // Schedule is reached from Home ("Today's plan"); keep the bar to 2 + (+) + 2 like the design.
   const tabs = state.routes.flatMap((route, index) => {
@@ -62,19 +72,26 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
         style={{ backgroundColor: barBg, borderRadius: 28, borderWidth: hc ? 2 : 0, borderColor: '#FFE14D' }}
         className="flex-row items-center px-1 py-2 shadow-lg shadow-black/30"
       >
-        {tabs.slice(0, mid)}
-        <View className="w-16 items-center">
-          <Pressable
-            role="button"
-            accessibilityLabel="Add a medicine"
-            onPress={() => router.push('/add')}
-            style={{ backgroundColor: c.blush, borderColor: c.background, marginTop: -34 }}
-            className="h-16 w-16 items-center justify-center rounded-full border-4 active:opacity-80"
-          >
-            <Plus size={30} color="#1F1D1B" strokeWidth={2.6} />
-          </Pressable>
-        </View>
-        {tabs.slice(mid)}
+        {caregiver ? (
+          // Three even tabs; "Link a person" lives on the People and Profile screens.
+          tabs
+        ) : (
+          <>
+            {tabs.slice(0, mid)}
+            <View className="w-16 items-center">
+              <Pressable
+                role="button"
+                accessibilityLabel="Add a medicine"
+                onPress={() => router.push('/add')}
+                style={{ backgroundColor: c.blush, borderColor: c.background, marginTop: -34 }}
+                className="h-16 w-16 items-center justify-center rounded-full border-4 active:opacity-80"
+              >
+                <Plus size={30} color="#1F1D1B" strokeWidth={2.6} />
+              </Pressable>
+            </View>
+            {tabs.slice(mid)}
+          </>
+        )}
       </View>
     </View>
   );

@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
 import { Bell, BellOff, CalendarDays, ChartColumn, Moon, PartyPopper } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CareHome } from '@/components/care/CareHome';
+import { HomeHeader } from '@/components/common/HomeHeader';
 import { ProgressRing } from '@/components/common/ProgressRing';
 import { DoseRow } from '@/components/medication/DoseRow';
 import { EmptyMedicines } from '@/components/medication/EmptyMedicines';
@@ -17,13 +19,16 @@ import { useMedicationsQuery } from '@/hooks/useMedications';
 import { useReminderState } from '@/hooks/useReminders';
 import { useTodayDoses } from '@/hooks/useTodayDoses';
 import { useAuth } from '@/store/authStore';
-import { greeting } from '@/utils/date';
 
 export default function HomeScreen() {
+  const role = useAuth((s) => s.user?.role);
+  return role === 'CAREGIVER' ? <CareHome /> : <PatientHome />;
+}
+
+function PatientHome() {
   const { now, events, next, summary, medications } = useTodayDoses();
   const query = useMedicationsQuery();
   const name = useAuth((s) => s.user?.name) ?? '';
-  const firstName = name.split(' ')[0];
   const remindersOn = useReminderState((s) => s.permission === 'granted' || s.permission === 'unsupported');
   const c = useThemeColors();
   const total = summary.totalScheduled;
@@ -38,33 +43,16 @@ export default function HomeScreen() {
         contentContainerClassName="gap-5 px-4 pb-32 pt-2"
         refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => query.refetch()} />}
       >
-        {/* Top bar: avatar · date · reminder status */}
-        <View className="flex-row items-center justify-between">
-          <Pressable
-            onPress={() => router.navigate('/profile')}
-            accessibilityRole="button"
-            accessibilityLabel="Open profile"
-            className="h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground"
-          >
-            <Text className="text-lg font-extrabold">{firstName.slice(0, 1).toUpperCase() || '🙂'}</Text>
-          </Pressable>
-          <Text className="font-semibold text-muted-foreground">
-            {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
-          </Text>
-          <Pressable
-            onPress={() => router.navigate('/profile')}
-            accessibilityRole="button"
-            accessibilityLabel={remindersOn ? 'Reminders are on' : 'Reminders are off. Open settings'}
-            className="h-12 w-12 items-center justify-center rounded-full bg-card"
-          >
-            <Icon as={remindersOn ? Bell : BellOff} size={22} className={remindersOn ? 'text-foreground' : 'text-warning'} />
-          </Pressable>
-        </View>
-
-        <Text role="heading" className="text-3xl font-extrabold tracking-tight">
-          {greeting(now)}
-          {firstName ? `,\n${firstName}` : ''}
-        </Text>
+        <HomeHeader
+          name={name}
+          now={now}
+          action={{
+            icon: remindersOn ? Bell : BellOff,
+            label: remindersOn ? 'Reminders are on' : 'Reminders are off. Open settings',
+            iconClass: remindersOn ? undefined : 'text-warning',
+            onPress: () => router.navigate('/profile'),
+          }}
+        />
 
         {total > 0 ? (
           <View className="flex-row items-center gap-4 rounded-[28px] bg-secondary p-5">

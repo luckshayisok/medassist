@@ -14,12 +14,12 @@ import { emptyForm, fromMedication, mapServerFields, toPayload, validate, type F
 import { MedicationForm } from './MedicationForm';
 
 /** Shared add/edit screen: ✕ / title / ✓ header, the form, and a big Save bar. */
-export function MedicationEditor({ existing }: { existing?: Medication }) {
+export function MedicationEditor({ existing, patientId }: { existing?: Medication; patientId?: string }) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [form, setForm] = useState(() => (existing ? fromMedication(existing) : emptyForm()));
   const [errors, setErrors] = useState<FormErrors>({});
-  const save = useSaveMedication();
+  const save = useSaveMedication(patientId);
   const medId = useMemo(() => existing?.id ?? uuid(), [existing?.id]);
 
   // Clear a field's error as soon as the user changes that field.
@@ -44,7 +44,7 @@ export function MedicationEditor({ existing }: { existing?: Medication }) {
     }
     try {
       const med = await save.mutateAsync({ id: existing?.id, version: existing?.version, input: toPayload(form), photo: form.photo });
-      if (existing) router.back();
+      if (existing || patientId) router.back();
       else router.replace({ pathname: '/medication/[id]', params: { id: med.id } });
     } catch (err) {
       if (err instanceof ApiError) {
