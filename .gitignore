@@ -11,3 +11,5 @@ mobile/ios/
 *.log
 .DS_Store
 .claude/
+.neon
+.neon/
