@@ -315,3 +315,18 @@ model PushToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ─── Verified drug information ───────────────────────────────────────────────
+
+/// Cached official label text (US FDA via openFDA) for one active ingredient. Used as the only
+/// source for "verified" facts in the assistant. Refreshed after 30 days; misses retried after 7.
+model DrugLabel {
+  ingredient    String   @id @db.VarChar(120)
+  found         Boolean
+  title         String?  @db.VarChar(200)
+  setId         String?  @db.VarChar(64)
+  effectiveDate String?  @db.VarChar(8)
+  /// { uses, warnings, sideEffects, interactions, patientInfo, ... } → string[] (plain text chunks)
+  sections      Json     @default("{}")
+  fetchedAt     DateTime @default(now()) @db.Timestamptz(3)
+}

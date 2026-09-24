@@ -5,7 +5,9 @@ import { assertPatientAccess } from '../../lib/access.js';
 import { HttpError } from '../../lib/errors.js';
 import { LlmError, type LlmClient } from '../../lib/gemini.js';
 import type { Db } from '../../lib/prisma.js';
-import { containsUnsafeAdvice, emergencyReply, isEmergency, SAFE_FALLBACK, type Section } from './safety.js';
+import type { DrugInfoService, VerifiedSnippet } from '../druginfo/druginfo.service.js';
+import { logger } from '../../lib/logger.js';
+import { containsUnsafeAdvice, emergencyReply, isEmergency, SAFE_FALLBACK, unsafeRules, type Section } from './safety.js';
 
 type Actor = { userId: string; role: 'PATIENT' | 'CAREGIVER' };
 
@@ -54,13 +56,14 @@ You must NEVER:
 How to answer:
 - Split your answer into sections and label each one honestly:
   - "prescription": facts taken directly from PATIENT MEDICINES (their dose, times, food and doctor instructions). Only use this label for what is actually listed there.
-  - "verified": only facts from VERIFIED INFORMATION, and put its source name in "source". If there is no VERIFIED INFORMATION, never use this label.
+  - "verified": only facts stated in VERIFIED INFORMATION, retold in simple words. Put the exact source name shown in [brackets] in "source". Never add anything that passage does not say. If there is no VERIFIED INFORMATION, never use this label.
   - "general": widely known, non-personal background (e.g. "Metformin is commonly used to help control blood sugar"). Keep it brief and hedged.
   - "safety": when they should check with their doctor or pharmacist, or anything important about safety.
 - Missed dose questions: repeat what their prescription says if it covers it; otherwise tell them to check the medicine leaflet or ask their pharmacist. Never tell them to double up.
 - If they ask to change timing, dose or stop: say what the prescription says, then tell them to confirm any change with their doctor or pharmacist.
 - If information is missing or unclear, say so plainly and suggest asking the pharmacist.
 - If they describe serious symptoms, tell them to call emergency services.
+- VERIFIED INFORMATION comes from official US drug labels for the same active ingredient. Never quote dose amounts from it; the patient's prescription decides the dose. Mention a side effect or warning only if it helps answer the question, calmly, and say to tell their doctor if it happens.
 - Reply in the language the patient writes in. Use at most about 120 words in total. No medical jargon.
 - followUps: up to 3 short questions the patient might want to ask next, about their own medicines.`;
 
@@ -69,7 +72,15 @@ export class AssistantService {
     private readonly db: Db,
     private readonly llm: LlmClient | null,
     private readonly emergencyNumber = '112',
+    private readonly drugInfo: DrugInfoService | null = null,
   ) {}
+
+  /** Official label passages for this question, or nothing. Never blocks or fails the answer. */
+  private async verifiedFor(question: string, patientId: string): Promise<VerifiedSnippet[]> {
+    if (!this.drugInfo) return [];
+    const meds = await this.db.medication.findMany({ where: { patientId, deletedAt: null }, select: { name: true } });
+    return this.drugInfo.snippetsFor(question, meds.map((m) => m.name)).catch(() => []);
+  }
 
   private async patientContext(patientId: string): Promise<string> {
     const meds = await this.db.medication.findMany({
@@ -153,7 +164,7 @@ export class AssistantService {
       if (!this.llm) {
         throw new HttpError(503, 'ASSISTANT_UNAVAILABLE', 'The assistant is not set up yet. Please try again later.');
       }
-      const context = await this.patientContext(patientId);
+      const [context, verified] = await Promise.all([this.patientContext(patientId), this.verifiedFor(input.message, patientId)]);
       const history = previous.reverse().map((m) => ({
         role: m.role === 'USER' ? 'user' : 'model',
         parts: [{ text: m.message }],
@@ -163,7 +174,7 @@ export class AssistantService {
         text = await this.llm.generate({
           contents: [...history, { role: 'user', parts: [{ text: input.message }] }],
           config: {
-            systemInstruction: `${ASSISTANT_RULES}\n\n${context}\n\nVERIFIED INFORMATION: none available yet.`,
+            systemInstruction: `${ASSISTANT_RULES}\n\n${context}\n\n${verifiedBlock(verified)}`,
             responseMimeType: 'application/json',
             responseJsonSchema: REPLY_JSON_SCHEMA,
             temperature: 0.2,
@@ -175,10 +186,13 @@ export class AssistantService {
         throw e;
       }
       const parsed = safeParseReply(text);
-      sections = parsed?.sections ?? SAFE_FALLBACK;
+      sections = parsed ? checkSources(parsed.sections, verified) : SAFE_FALLBACK;
       followUps = parsed?.followUps ?? [];
       // Code-level backstop: no dose changes, stopping, or diagnoses — whatever the model said.
+      if (!parsed) logger.warn({ reason: 'unparseable', length: text.length }, 'assistant reply replaced with safe fallback');
       if (containsUnsafeAdvice(sections)) {
+        // Which rule fired (never the text: it can hold health details).
+        logger.warn({ reason: 'unsafe', rules: unsafeRules(sections) }, 'assistant reply replaced with safe fallback');
         sections = SAFE_FALLBACK;
         followUps = [];
       }
@@ -196,6 +210,35 @@ export class AssistantService {
     });
     return { conversationId, message: this.serialize(saved) };
   }
+}
+
+const TOPIC_LABEL: Record<VerifiedSnippet['topic'], string> = {
+  uses: 'what it is used for',
+  warnings: 'warnings',
+  sideEffects: 'side effects',
+  interactions: 'interactions',
+  patientInfo: 'patient information',
+  avoid: 'things to avoid',
+  olderAdults: 'use in older adults',
+};
+
+function verifiedBlock(snippets: VerifiedSnippet[]): string {
+  if (!snippets.length) return 'VERIFIED INFORMATION: none available for this question.';
+  const lines = snippets.map((s) => `[${s.source}] (about ${s.medicine}, ${TOPIC_LABEL[s.topic]}): ${s.text}`);
+  return `VERIFIED INFORMATION (official label passages; retell simply, cite the [source]):\n${lines.join('\n')}`;
+}
+
+/** A "verified" section is kept only when it cites a source we actually supplied; otherwise it becomes "general". */
+export function checkSources(sections: Section[], snippets: VerifiedSnippet[]): Section[] {
+  const known = new Map(snippets.map((s) => [s.source.toLowerCase(), s.source]));
+  return sections.map((raw) => {
+    // The app shows the source as a label, so drop "[US FDA label: …]" repeated inside the text.
+    const s = { ...raw, text: raw.text.replace(/\s*\[(US FDA label:[^\]]*)\]/gi, '').trim() };
+    if (s.kind !== 'verified') return s;
+    const cited = s.source?.trim().replace(/^\[|\]$/g, '').toLowerCase();
+    const src = cited ? known.get(cited) : undefined;
+    return src ? { ...s, source: src } : { kind: 'general', text: s.text };
+  });
 }
 
 function safeParseReply(text: string): { sections: Section[]; followUps: string[] } | null {

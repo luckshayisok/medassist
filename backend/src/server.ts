@@ -4,6 +4,7 @@ import { logger } from './lib/logger.js';
 import { createPrisma } from './lib/prisma.js';
 import { createStorage } from './lib/storage.js';
 import { GeminiClient, RequestBudget } from './lib/gemini.js';
+import { OpenFdaSource } from './modules/druginfo/openfda.js';
 import { GeminiExtractor } from './modules/prescriptions/extractor.js';
 
 const config = loadConfig();
@@ -17,6 +18,7 @@ const app = createApp({
   storage: createStorage(config.storageDriver, config.storageDir, db),
   extractor: llm ? new GeminiExtractor(llm) : null,
   llm,
+  labels: new OpenFdaSource(),
 });
 
 const server = app.listen(config.port, '0.0.0.0', () => {

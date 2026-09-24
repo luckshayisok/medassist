@@ -10,7 +10,7 @@ import type { ChatMessage, ChatSection, SectionKind } from '@/services/api/assis
 
 const LABEL: Record<SectionKind, { label: (s: ChatSection) => string; icon: LucideIcon; box: string; pill: string }> = {
   prescription: { label: () => 'From your prescription', icon: FileText, box: 'bg-card border border-border', pill: 'bg-blush' },
-  verified: { label: (s) => `Verified${s.source ? `: ${s.source}` : ''}`, icon: ShieldCheck, box: 'bg-card border border-border', pill: 'bg-success-soft' },
+  verified: { label: () => 'Verified information', icon: ShieldCheck, box: 'bg-card border border-border', pill: 'bg-success-soft' },
   general: { label: () => 'General information', icon: Info, box: 'bg-card border border-border', pill: 'bg-muted' },
   safety: { label: () => 'Check with your doctor', icon: TriangleAlert, box: 'bg-warning-soft', pill: 'bg-card' },
   emergency: { label: () => 'Emergency', icon: Siren, box: 'bg-destructive-soft border-2 border-destructive', pill: 'bg-card' },
@@ -40,6 +40,7 @@ export function AssistantMessage({ message, onFollowUp, showFollowUps }: { messa
               <Text className={cn('text-xs font-bold', s.kind === 'emergency' && 'text-destructive')}>{m.label(s)}</Text>
             </View>
             <Text className={cn('text-base leading-6', s.kind === 'emergency' && 'font-bold')}>{s.text}</Text>
+            {s.kind === 'verified' && s.source ? <Text className="text-xs font-semibold text-muted-foreground">Source: {s.source}</Text> : null}
             {s.kind === 'emergency' ? (
               <Button className="bg-destructive" onPress={() => Linking.openURL(`tel:${EMERGENCY_NUMBER}`)}>
                 <Icon as={Phone} size={20} className="text-destructive-foreground" />

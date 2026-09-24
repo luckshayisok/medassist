@@ -46,6 +46,17 @@ describe('GeminiClient', () => {
     expect(Date.now() - t).toBeGreaterThanOrEqual(1_400);
   });
 
+  it('skips a model for a while after it reports its quota is used up', async () => {
+    const call = vi.fn<GenerateFn>(async (p) => {
+      if (p.model === 'm1') throw apiError(429);
+      return { text: `from ${p.model}` };
+    });
+    const c = client(call);
+    await expect(c.generate({ contents: 'a' })).resolves.toBe('from m2');
+    await expect(c.generate({ contents: 'b' })).resolves.toBe('from m2');
+    expect(call.mock.calls.map((x) => x[0].model)).toEqual(['m1', 'm2', 'm2']);
+  });
+
   it('treats an empty (filtered) response as unanswerable', async () => {
     const call = vi.fn<GenerateFn>().mockResolvedValue({ text: '' });
     await expect(client(call).generate({ contents: 'hi' })).rejects.toBeInstanceOf(LlmError);

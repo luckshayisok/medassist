@@ -10,6 +10,7 @@ import { PrismaClient } from '../src/generated/prisma/client.js';
 import { LocalDiskStorage } from '../src/lib/storage.js';
 import type { PrescriptionExtractor } from '../src/modules/prescriptions/extractor.js';
 import type { LlmClient } from '../src/lib/gemini.js';
+import type { LabelSource } from '../src/modules/druginfo/openfda.js';
 
 export const testConfig: AppConfig = {
   nodeEnv: 'test',
@@ -46,10 +47,10 @@ export async function createTestDb() {
   };
 }
 
-export function makeApi(db: PrismaClient, config: Partial<AppConfig> = {}, extractor: PrescriptionExtractor | null = null, llm: LlmClient | null = null) {
+export function makeApi(db: PrismaClient, config: Partial<AppConfig> = {}, extractor: PrescriptionExtractor | null = null, llm: LlmClient | null = null, labels: LabelSource | null = null) {
   const storageDir = mkdtempSync(join(tmpdir(), 'medassist-test-'));
   const storage = new LocalDiskStorage(storageDir);
-  const agent = request(createApp({ db, config: { ...testConfig, storageDir, ...config }, storage, extractor, llm }));
+  const agent = request(createApp({ db, config: { ...testConfig, storageDir, ...config }, storage, extractor, llm, labels }));
   return Object.assign(agent, { storage, storageDir });
 }
 

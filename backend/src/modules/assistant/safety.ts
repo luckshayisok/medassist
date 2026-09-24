@@ -62,15 +62,23 @@ const UNSAFE_ADVICE: RegExp[] = [
 const NEGATED = /\b(never|not|don'?t|do not|should ?n'?o?t|must ?n'?o?t|avoid|no need to|please don'?t)\b[^.!?]{0,20}$/i;
 
 function unsafeText(text: string): boolean {
-  return UNSAFE_ADVICE.some((pattern) => {
-    const re = new RegExp(pattern.source, 'gi');
-    for (const m of text.matchAll(re)) {
-      const before = text.slice(0, m.index).split(/[.!?]\s/).pop() ?? '';
-      // "don't take it" is itself a stop instruction, so it is never excused by its own "don't".
-      if (!NEGATED.test(before)) return true;
-    }
-    return false;
-  });
+  return UNSAFE_ADVICE.some((pattern) => unsafeMatch(pattern, text));
+}
+
+/** Indexes of the rules that fired, for logs. */
+export function unsafeRules(sections: Section[]): number[] {
+  const texts = sections.filter((s) => s.kind !== 'prescription').map((s) => s.text);
+  return UNSAFE_ADVICE.flatMap((p, i) => (texts.some((t) => unsafeMatch(p, t)) ? [i] : []));
+}
+
+function unsafeMatch(pattern: RegExp, text: string): boolean {
+  const re = new RegExp(pattern.source, 'gi');
+  for (const m of text.matchAll(re)) {
+    const before = text.slice(0, m.index).split(/[.!?]\s/).pop() ?? '';
+    // "don't take it" is itself a stop instruction, so it is never excused by its own "don't".
+    if (!NEGATED.test(before)) return true;
+  }
+  return false;
 }
 
 export function containsUnsafeAdvice(sections: Section[]): boolean {

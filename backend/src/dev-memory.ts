@@ -12,6 +12,7 @@ import { PrismaClient } from './generated/prisma/client.js';
 import { logger } from './lib/logger.js';
 import { LocalDiskStorage } from './lib/storage.js';
 import { GeminiClient, RequestBudget } from './lib/gemini.js';
+import { OpenFdaSource } from './modules/druginfo/openfda.js';
 import { DemoExtractor, GeminiExtractor } from './modules/prescriptions/extractor.js';
 import { tmpdir } from 'node:os';
 
@@ -30,6 +31,7 @@ const app = createApp({
   // Real Gemini if a key is set; otherwise a clearly-fake sample reader so the flow can be tried.
   extractor: devLlm ? new GeminiExtractor(devLlm) : new DemoExtractor(),
   llm: devLlm,
+  labels: new OpenFdaSource(),
   config: {
     nodeEnv: 'development',
     port,

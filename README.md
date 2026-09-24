@@ -81,7 +81,14 @@ cd mobile  && npm test && npx tsc --noEmit    # 23 unit tests
   quota and shows a friendly "try later" message instead of failing.
   ⚠️ On the free tier Google may use prompts to improve its products. Switch to a paid key before real
   patients use the app.
-- **Next:** verified drug facts (RAG over openFDA labels), caregiver linking, and offline, security and accessibility hardening.
+- **Phase 10:** verified drug facts. For each of the patient's medicines the server finds the official
+  US FDA label for the same active ingredient (openFDA, free, no key), keeps only patient-relevant parts
+  (uses, warnings, side effects, interactions, things to avoid; never dosing), and caches it in Postgres
+  for 30 days. The assistant gets the few passages that match the question, and may label something
+  "Verified information" only when it cites one of those passages; anything else is shown as general
+  information. Indian names are mapped (paracetamol → acetaminophen, Dolo → acetaminophen…), and
+  combination brands are never mapped to a single ingredient.
+- **Next:** caregiver linking, and offline, security and accessibility hardening.
 
 ## Testing reminders
 Expo Go on **Android** can't use notifications (Expo removed them in SDK 53). The app still runs there,
