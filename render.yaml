@@ -1,0 +1,32 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Free web service for the MedAssist API. The database lives on Neon (free Postgres).
+services:
+  - type: web
+    name: medassist-api
+    runtime: node
+    plan: free
+    region: singapore # closest Render region to India
+    rootDir: backend
+    # devDependencies (prisma CLI, tsup) are needed to build, so include them explicitly.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    # Free plan has no pre-deploy step, so apply migrations at start (safe to re-run).
+    startCommand: npx prisma migrate deploy && node dist/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # paste your Neon connection string in the Render dashboard
+      - key: JWT_ACCESS_SECRET
+        generateValue: true # Render creates a strong random secret
+      - key: STORAGE_DRIVER
+        value: db # Render free has no persistent disk; photos go in Postgres
+      - key: ACCESS_TOKEN_TTL_SECONDS
+        value: "900"
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: "30"
+      - key: CORS_ORIGINS
+        value: ""

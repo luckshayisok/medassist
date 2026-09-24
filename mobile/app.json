@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "MedAssist",
+    "slug": "medassist",
+    "scheme": "medassist",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medassist.app"
+    },
+    "android": {
+      "package": "com.medassist.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "color": "#0A5378",
+          "defaultChannel": "medication-reminders"
+        }
+      ],
+      "expo-background-task",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "MedAssist uses the camera to take a photo of your medicine or prescription.",
+          "photosPermission": "MedAssist lets you choose a photo of your medicine or prescription.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4905ba2a-6351-4e25-8f65-fd781d03ca93"
+      }
+    }
+  }
+}

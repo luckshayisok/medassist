@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+uploads/
+backend/src/generated/
+mobile/.expo/
+mobile/android/
+mobile/ios/
+*.log
+.DS_Store
+.claude/
