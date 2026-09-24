@@ -47,7 +47,7 @@ export default function MedicinesScreen() {
         </View>
 
         {meds.length > 0 ? (
-          <Button size="lg" className="rounded-2xl" onPress={() => router.push('/medication/new')}>
+          <Button size="lg" className="rounded-2xl" onPress={() => router.push('/add')}>
             <Icon as={Plus} size={26} strokeWidth={2.6} />
             <Text>Add medicine</Text>
           </Button>

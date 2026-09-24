@@ -1,7 +1,10 @@
 import { ApiError, GoogleGenAI, type GenerateContentParameters } from '@google/genai';
 
-/** Fast, free-tier-friendly model; the alias tracks Google's current Flash release. */
-export const GEMINI_MODEL = 'gemini-flash-latest';
+/**
+ * Tried in order. Free-tier Flash models are often briefly overloaded (503), so we fall through
+ * to the next one instead of failing. Older IDs (e.g. gemini-2.5-flash) are closed to new keys.
+ */
+export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 
 export class LlmError extends Error {
   constructor(
@@ -41,35 +44,58 @@ export interface LlmClient {
   generate(params: Omit<GenerateContentParameters, 'model'>): Promise<string>;
 }
 
+/** Minimal surface of the SDK we use — lets tests inject a fake. */
+export interface GenerateFn {
+  (params: GenerateContentParameters): Promise<{ text?: string }>;
+}
+
+// Model-side conditions where another model may succeed.
+const TRY_NEXT = new Set([404, 500, 503]);
+
 export class GeminiClient implements LlmClient {
-  private readonly ai: GoogleGenAI;
+  private readonly call: GenerateFn;
 
   constructor(
     apiKey: string,
     private readonly budget: RequestBudget,
-    private readonly model = GEMINI_MODEL,
+    private readonly models: string[] = GEMINI_MODELS,
+    call?: GenerateFn,
   ) {
-    this.ai = new GoogleGenAI({ apiKey });
+    if (call) {
+      this.call = call;
+    } else {
+      const ai = new GoogleGenAI({ apiKey });
+      this.call = (p) => ai.models.generateContent(p);
+    }
   }
 
   async generate(params: Omit<GenerateContentParameters, 'model'>): Promise<string> {
     if (!this.budget.take()) throw new LlmError('The assistant is busy right now. Please try again in a minute.', true);
-    try {
-      const res = await this.ai.models.generateContent({ ...params, model: this.model });
-      const text = res.text;
-      if (!text) {
-        // Empty text usually means the response was blocked by a safety filter.
-        throw new LlmError('This request could not be answered. Please rephrase, or ask your doctor or pharmacist.', false);
+    let last: unknown;
+    for (const model of this.models) {
+      try {
+        const res = await this.call({ ...params, model });
+        if (!res.text) {
+          // Empty text usually means a safety filter blocked the response.
+          throw new LlmError('This request could not be answered. Please rephrase, or ask your doctor or pharmacist.', false);
+        }
+        return res.text;
+      } catch (e) {
+        if (e instanceof LlmError) throw e;
+        last = e;
+        if (e instanceof ApiError && TRY_NEXT.has(e.status)) continue;
+        break;
       }
-      return text;
-    } catch (e) {
-      if (e instanceof LlmError) throw e;
-      if (e instanceof ApiError) {
-        if (e.status === 429) throw new LlmError('The assistant has reached its free usage limit for now. Please try again later.', true);
-        if (e.status === 400 || e.status === 401 || e.status === 403) throw new LlmError('The AI service is not set up correctly on the server.', false);
-        if (e.status >= 500) throw new LlmError('The AI service is busy. Please try again in a minute.', true);
-      }
-      throw new LlmError('Something went wrong reaching the AI service. Please try again.', true);
     }
+    throw toLlmError(last);
   }
+}
+
+function toLlmError(e: unknown): LlmError {
+  if (e instanceof ApiError) {
+    if (e.status === 429) return new LlmError('The assistant has reached its free usage limit for now. Please try again later.', true);
+    if (e.status === 400 || e.status === 401 || e.status === 403) return new LlmError('The AI service is not set up correctly on the server.', false);
+    if (e.status >= 500 || e.status === 404) return new LlmError('The AI service is busy. Please try again in a minute.', true);
+  }
+  return new LlmError('Something went wrong reaching the AI service. Please try again.', true);
 }

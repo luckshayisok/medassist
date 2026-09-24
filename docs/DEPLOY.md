@@ -38,6 +38,8 @@ Check that `.env` files are **not** in the commit (they are gitignored).
 1. Sign up at https://render.com and connect your GitHub account.
 2. **New → Blueprint**, then pick the `medassist` repo. Render reads `render.yaml` and creates `medassist-api`.
 3. When asked for `DATABASE_URL`, paste the Neon connection string. `JWT_ACCESS_SECRET` is generated automatically.
+   For the scanner and the assistant, also paste a `GEMINI_API_KEY` from https://aistudio.google.com/apikey
+   (free). Without it the rest of the app works, and those two features say "not available".
 4. Deploy. The first build takes about 3–5 min. On start it runs `prisma migrate deploy`, which creates the tables in Neon.
 5. Open `https://medassist-api-wjhy.onrender.com/health`. It should show `{"ok":true}`.
    If Render gives the service a different URL, put that URL in `mobile/eas.json` (`preview` and `production` → `EXPO_PUBLIC_API_URL`).

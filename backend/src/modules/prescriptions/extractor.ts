@@ -88,7 +88,7 @@ Rules:
 - foodTiming only from explicit instructions (AC, PC, "after food", "empty stomach", ...). Otherwise NOT_STATED.
 - sourceText: the exact line(s) you read for that medicine, so the patient can compare.
 - confidence: 0 to 1 for how sure you are of the whole entry.
-- Put anything the patient should double-check with their doctor or pharmacist in warnings (e.g. "Line 3 is partly illegible", "No duration written for Metformin"). Do not give medical advice.
+- Put anything the patient should double-check with their doctor or pharmacist in warnings (e.g. "Line 3 is partly illegible", "No duration written for Metformin"). When a medicine name is unclear, refer to it only by its line number in warnings - never write a partial or guessed name anywhere. Do not give medical advice.
 - If the image is not a prescription or is unreadable, set readable to false, medications to [], and explain in warnings.`;
 
 /** Reads prescriptions with Gemini (vision + JSON-schema output). */

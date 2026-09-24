@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { Chip } from '@/components/common/Chip';
 import { Button } from '@/components/ui/button';
@@ -29,9 +29,13 @@ export function toHHmm(hour12: number, minute: number, pm: boolean) {
 /** Big-button time picker: tap an hour, a minute and AM/PM. No tiny wheels. */
 export function TimePickerDialog({ open, onOpenChange, initial = '08:00', onConfirm }: Props) {
   const [state, setState] = useState(() => parse(initial));
-  useEffect(() => {
-    if (open) setState(parse(initial));
-  }, [open, initial]);
+  // Reset to `initial` each time the dialog opens (adjusting state during render, not in an effect).
+  const [openedFor, setOpenedFor] = useState<string | null>(null);
+  const key = open ? initial : null;
+  if (key !== openedFor) {
+    setOpenedFor(key);
+    if (key !== null) setState(parse(key));
+  }
 
   const preview = toHHmm(state.hour12, state.minute, state.pm);
   const label = `${state.hour12}:${String(state.minute).padStart(2, '0')} ${state.pm ? 'PM' : 'AM'}`;

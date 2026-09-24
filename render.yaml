@@ -22,6 +22,8 @@ services:
         sync: false # paste your Neon connection string in the Render dashboard
       - key: JWT_ACCESS_SECRET
         generateValue: true # Render creates a strong random secret
+      - key: GEMINI_API_KEY
+        sync: false # Google AI Studio key: prescription reading + assistant (optional)
       - key: STORAGE_DRIVER
         value: db # Render free has no persistent disk; photos go in Postgres
       - key: ACCESS_TOKEN_TTL_SECONDS

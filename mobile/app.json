@@ -15,7 +15,7 @@
       "package": "com.medassist.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1F1D1B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -49,6 +49,19 @@
           "cameraPermission": "MedAssist uses the camera to take a photo of your medicine or prescription.",
           "photosPermission": "MedAssist lets you choose a photo of your medicine or prescription.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F0E4",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#1F1D1B"
+          }
         }
       ]
     ],

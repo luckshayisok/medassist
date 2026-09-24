@@ -65,7 +65,23 @@ cd mobile  && npm test && npx tsc --noEmit    # 23 unit tests
     insights that never give dosing advice.
   - The **History** screen (Home → History) has a week or 30-day chart, counts, insights and per-medicine bars.
 - **Hosting:** photos can be stored in Postgres (`STORAGE_DRIVER=db`) for Render free. See `render.yaml` and `docs/DEPLOY.md`.
-- **Next, Phase 7/8:** prescription scanner (camera, then AI extraction, then patient verification).
+- **Phase 7/8:** prescription scanner. The patient takes or picks a photo (crop allowed). The server
+  re-encodes it, stores it privately, and Gemini reads it into draft medicines (name, strength, dose,
+  times, before/after food, duration, warnings). Each draft has a confidence score. Unclear names are
+  never guessed: they are left blank and flagged for the patient to type in. **Nothing becomes a
+  medicine until the patient reviews every item and confirms.** A failed or stuck reading can be retried.
+- **Phase 9:** AI assistant ("Ask" tab). It answers only from the patient's own medicines, and every
+  answer is split into labelled parts: "From your prescription", "General information", "Check with
+  your doctor". Emergency words (chest pain, can't breathe, swelling lips, overdose…) skip the AI
+  and show a call-112 card straight away. A code-level filter also blocks any reply that
+  changes a dose, stops a medicine or diagnoses. Answers can be read aloud.
+- **AI provider:** Google Gemini (`GEMINI_API_KEY`, free tier). It tries `gemini-3.6-flash` first,
+  then the `flash-latest` / `flash-lite-latest` models if one is busy. A server-wide budget
+  (`GEMINI_REQUESTS_PER_MINUTE`=8, `GEMINI_REQUESTS_PER_DAY`=200) keeps usage inside the free
+  quota and shows a friendly "try later" message instead of failing.
+  ⚠️ On the free tier Google may use prompts to improve its products. Switch to a paid key before real
+  patients use the app.
+- **Next:** verified drug facts (RAG over openFDA labels), caregiver linking, and offline, security and accessibility hardening.
 
 ## Testing reminders
 Expo Go on **Android** can't use notifications (Expo removed them in SDK 53). The app still runs there,

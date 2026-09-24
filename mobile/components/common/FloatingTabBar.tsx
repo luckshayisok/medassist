@@ -67,7 +67,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           <Pressable
             role="button"
             accessibilityLabel="Add a medicine"
-            onPress={() => router.push('/medication/new')}
+            onPress={() => router.push('/add')}
             style={{ backgroundColor: c.blush, borderColor: c.background, marginTop: -34 }}
             className="h-16 w-16 items-center justify-center rounded-full border-4 active:opacity-80"
           >

@@ -60,6 +60,10 @@ export default function RootLayout() {
                 <Stack.Screen name="medication/new" options={{ headerShown: false, presentation: 'modal' }} />
                 <Stack.Screen name="medication/[id]/index" options={{ ...header, title: 'Medicine' }} />
                 <Stack.Screen name="history" options={{ ...header, title: 'Your progress' }} />
+                <Stack.Screen name="add" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="prescription/scan" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="prescription/[id]/index" options={{ headerShown: false }} />
+                <Stack.Screen name="prescription/[id]/[index]" options={{ headerShown: false, presentation: 'modal' }} />
                 <Stack.Screen name="medication/[id]/edit" options={{ headerShown: false, presentation: 'modal' }} />
               </Stack.Protected>
             </Stack>
