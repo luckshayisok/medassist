@@ -59,6 +59,7 @@ export default function RootLayout() {
                 <Stack.Screen name="reminder/[doseKey]" options={{ ...header, title: 'Your medicine', presentation: 'fullScreenModal' }} />
                 <Stack.Screen name="medication/new" options={{ headerShown: false, presentation: 'modal' }} />
                 <Stack.Screen name="medication/[id]/index" options={{ ...header, title: 'Medicine' }} />
+                <Stack.Screen name="history" options={{ ...header, title: 'Your progress' }} />
                 <Stack.Screen name="medication/[id]/edit" options={{ headerShown: false, presentation: 'modal' }} />
               </Stack.Protected>
             </Stack>

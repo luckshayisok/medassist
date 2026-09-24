@@ -32,8 +32,8 @@ model User {
   caregivers          CaregiverRelationship[] @relation("patient")
   medications         Medication[]
   prescriptions       Prescription[]
-  medicationLogs      MedicationLog[]          @relation("patientLogs")
-  loggedMedicationLog MedicationLog[]          @relation("loggedBy")
+  medicationLogs      MedicationLog[]         @relation("patientLogs")
+  loggedMedicationLog MedicationLog[]         @relation("loggedBy")
   chatMessages        ChatMessage[]
   pushTokens          PushToken[]
 }
@@ -135,9 +135,9 @@ model Medication {
   createdAt         DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime   @updatedAt @db.Timestamptz(3)
 
-  patient              User                    @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  schedules            MedicationSchedule[]
-  logs                 MedicationLog[]
+  patient                User                    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  schedules              MedicationSchedule[]
+  logs                   MedicationLog[]
   prescriptionMedication PrescriptionMedication? @relation(fields: [prescriptionMedId], references: [id], onDelete: SetNull)
 
   @@index([patientId, active])
@@ -173,21 +173,23 @@ enum DoseLogStatus {
 }
 
 model MedicationLog {
-  id           String        @id @default(uuid()) @db.Uuid
+  id             String        @id @default(uuid()) @db.Uuid
   /// Client-generated id → idempotent offline sync.
-  clientId     String        @unique @db.Uuid
-  medicationId String        @db.Uuid
-  scheduleId   String        @db.Uuid
-  patientId    String        @db.Uuid
-  scheduledFor DateTime      @db.Timestamptz(3)
-  takenAt      DateTime?     @db.Timestamptz(3)
-  status       DoseLogStatus
-  skipReason   String?       @db.VarChar(32)
-  skipNote     String?       @db.VarChar(500)
-  snoozedUntil DateTime?     @db.Timestamptz(3)
-  loggedById   String        @db.Uuid
-  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  clientId       String        @unique @db.Uuid
+  medicationId   String        @db.Uuid
+  scheduleId     String        @db.Uuid
+  patientId      String        @db.Uuid
+  scheduledFor   DateTime      @db.Timestamptz(3)
+  takenAt        DateTime?     @db.Timestamptz(3)
+  status         DoseLogStatus
+  skipReason     String?       @db.VarChar(32)
+  skipNote       String?       @db.VarChar(500)
+  snoozedUntil   DateTime?     @db.Timestamptz(3)
+  /// When the patient pressed the button (device clock). Newest wins when two devices disagree.
+  clientLoggedAt DateTime      @default(now()) @db.Timestamptz(3)
+  loggedById     String        @db.Uuid
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
 
   medication Medication         @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
@@ -228,21 +230,21 @@ model Prescription {
 }
 
 model PrescriptionMedication {
-  id               String  @id @default(uuid()) @db.Uuid
-  prescriptionId   String  @db.Uuid
-  name             String? @db.VarChar(120)
-  dosage           String? @db.VarChar(60)
-  frequency        String? @db.VarChar(120)
-  timing           String? @db.VarChar(120)
-  foodInstructions String? @db.VarChar(500)
-  duration         String? @db.VarChar(120)
-  doctorNotes      String? @db.VarChar(1000)
-  sourceText       String? @db.VarChar(1000)
+  id               String   @id @default(uuid()) @db.Uuid
+  prescriptionId   String   @db.Uuid
+  name             String?  @db.VarChar(120)
+  dosage           String?  @db.VarChar(60)
+  frequency        String?  @db.VarChar(120)
+  timing           String?  @db.VarChar(120)
+  foodInstructions String?  @db.VarChar(500)
+  duration         String?  @db.VarChar(120)
+  doctorNotes      String?  @db.VarChar(1000)
+  sourceText       String?  @db.VarChar(1000)
   /// 0–1 overall confidence from the extractor.
-  confidence       Float   @default(0)
+  confidence       Float    @default(0)
   /// Field names the model could not read clearly. Never auto-filled.
   unclearFields    String[]
-  verified         Boolean @default(false)
+  verified         Boolean  @default(false)
 
   prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   medication   Medication?

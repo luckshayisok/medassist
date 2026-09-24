@@ -50,6 +50,8 @@ export interface Medication {
   startDate: string;
   endDate: string | null;
   version: number;
+  /** When it was added to the app — earlier doses never count as missed. */
+  createdAt?: string;
   schedules: MedicationSchedule[];
 }
 

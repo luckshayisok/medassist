@@ -76,9 +76,9 @@ async function toError(res: Response): Promise<ApiError> {
 // Single-flight: concurrent 401s share one refresh request (rotation makes parallel refreshes fatal).
 let refreshing: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
-  refreshing ??= (async () => {
-    try {
+function refreshAccessToken(): Promise<string | null> {
+  if (refreshing) return refreshing;
+  const run = (async () => {
       const session = await loadSession();
       if (!session) return null;
       const res = await rawFetch('/auth/refresh', { method: 'POST', body: JSON.stringify({ refreshToken: session.refreshToken }) });
@@ -91,10 +91,14 @@ async function refreshAccessToken(): Promise<string | null> {
       const next = (await res.json()) as AuthSession;
       await saveSession(next);
       return next.accessToken;
-    } finally {
-      refreshing = null;
-    }
   })();
+  // Clear only after assigning (see flushDoseOutbox for why clearing inside the fn is unsafe).
+  refreshing = run;
+  void run
+    .finally(() => {
+      if (refreshing === run) refreshing = null;
+    })
+    .catch(() => {});
   return refreshing;
 }
 

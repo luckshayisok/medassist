@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, BellOff, CalendarDays, Moon, PartyPopper } from 'lucide-react-native';
+import { Bell, BellOff, CalendarDays, ChartColumn, Moon, PartyPopper } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProgressRing } from '@/components/common/ProgressRing';
@@ -88,10 +88,16 @@ export default function HomeScreen() {
                   {summary.taken} of {total} taken today
                 </Text>
               </View>
-              <Button size="sm" className="self-start px-5" onPress={() => router.navigate('/schedule')}>
-                <Icon as={CalendarDays} size={18} className="text-primary-foreground" />
-                <Text className="text-sm">Today's plan</Text>
-              </Button>
+              <View className="flex-row flex-wrap gap-2">
+                <Button size="sm" className="px-4" onPress={() => router.navigate('/schedule')}>
+                  <Icon as={CalendarDays} size={18} className="text-primary-foreground" />
+                  <Text className="text-sm">Today</Text>
+                </Button>
+                <Button size="sm" variant="outline" className="border-2 border-foreground bg-transparent px-4" onPress={() => router.push('/history')}>
+                  <Icon as={ChartColumn} size={18} />
+                  <Text className="text-sm">History</Text>
+                </Button>
+              </View>
             </View>
           </View>
         ) : null}

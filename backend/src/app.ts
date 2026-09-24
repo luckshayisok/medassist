@@ -9,7 +9,9 @@ import type { Db } from './lib/prisma.js';
 import type { Storage } from './lib/storage.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { adherenceRoutes } from './modules/adherence/adherence.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { doseLogsRoutes } from './modules/doseLogs/doseLogs.routes.js';
 import { filesRoutes } from './modules/files/files.routes.js';
 import { medicationsRoutes } from './modules/medications/medications.routes.js';
 import { MedicationsService } from './modules/medications/medications.service.js';
@@ -45,6 +47,8 @@ export function createApp({ db, config, storage }: { db: Db; config: AppConfig; 
   const medications = new MedicationsService(db, storage, config.jwtAccessSecret);
   v1.use('/me', requireAuth(config), meRoutes(db, storage));
   v1.use('/medications', requireAuth(config), medicationsRoutes(medications));
+  v1.use('/dose-logs', requireAuth(config), doseLogsRoutes(db));
+  v1.use('/adherence', requireAuth(config), adherenceRoutes(db));
   // Signed-URL access for private images; no bearer token (so <Image> can load them).
   v1.use('/files', filesRoutes(storage, config));
   app.use('/api/v1', v1);

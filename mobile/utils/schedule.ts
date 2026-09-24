@@ -39,6 +39,8 @@ export function expandDay(
       const scheduledFor = atLocalTime(day, schedule.time);
       const doseKey = makeDoseKey(schedule.id, scheduledFor);
       const log = logs[doseKey];
+      // Same rule as the server: doses from before the medicine was added don't count (unless logged).
+      if (!log && medication.createdAt && scheduledFor.getTime() < Date.parse(medication.createdAt)) continue;
       events.push({
         doseKey,
         medication,

@@ -54,7 +54,18 @@ cd mobile  && npm test && npx tsc --noEmit    # 23 unit tests
   gentle nudge 30 minutes later if the dose isn't recorded. Tapping one opens that dose. Profile has a
   test button. All reminders are removed on sign-out.
 - **UI:** cream, ink and blush design with mustard highlight cards and a floating dark tab bar with a "+" button.
-- **Next, Phase 5/6:** send dose logs to the server, plus adherence history.
+- **Phase 5/6:** dose history on the server and adherence tracking.
+  - Every Took it / Skip / Snooze / Undo is saved on the phone first, then sent to
+    `POST /dose-logs/sync`. It works offline and retries when the connection returns.
+  - Retries never double-count a dose, and when two devices disagree the newest action wins.
+  - The server works out adherence in the patient's own timezone (DST-safe). Missed doses are
+    worked out automatically. Late doses (more than 1 hour after their time) are flagged.
+  - Doses from before a medicine was added never count as missed.
+  - `GET /adherence/weekly|monthly` returns daily figures, per-medicine figures, and plain-language
+    insights that never give dosing advice.
+  - The **History** screen (Home → History) has a week or 30-day chart, counts, insights and per-medicine bars.
+- **Hosting:** photos can be stored in Postgres (`STORAGE_DRIVER=db`) for Render free. See `render.yaml` and `docs/DEPLOY.md`.
+- **Next, Phase 7/8:** prescription scanner (camera, then AI extraction, then patient verification).
 
 ## Testing reminders
 Expo Go on **Android** can't use notifications (Expo removed them in SDK 53). The app still runs there,
