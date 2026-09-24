@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   CalendarRange,
+  ChevronRight,
   ClipboardList,
   GlassWater,
+  MessageCircleQuestion,
   NotebookPen,
   Pencil,
   ShieldAlert,
@@ -12,7 +14,7 @@ import {
   Utensils,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { FormAlert } from '@/components/common/FormAlert';
 import { Screen } from '@/components/common/Screen';
 import { MedAvatar } from '@/components/medication/MedAvatar';
@@ -157,6 +159,22 @@ export default function MedicationDetailScreen() {
             <Text>{m.notes}</Text>
           </InfoBlock>
         ) : null}
+
+        <Pressable
+          role="button"
+          accessibilityLabel={`Ask a question about ${m.name}`}
+          onPress={() => router.navigate({ pathname: '/assistant', params: { ask: `What is ${m.name} for, and how should I take it?` } })}
+          className="mt-1 min-h-16 flex-row items-center gap-3 rounded-[28px] bg-blush p-4 active:opacity-80"
+        >
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-card">
+            <Icon as={MessageCircleQuestion} size={22} className="text-foreground" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-extrabold text-blush-foreground">Questions about {m.name}?</Text>
+            <Text className="text-sm font-medium text-blush-foreground opacity-80">Ask the assistant in simple words</Text>
+          </View>
+          <Icon as={ChevronRight} size={22} className="text-blush-foreground" />
+        </Pressable>
       </View>
     </ScrollView>
   );

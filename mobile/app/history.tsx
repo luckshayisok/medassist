@@ -1,4 +1,4 @@
-import { AlarmClock, CircleCheck, CloudOff, Flame, Lightbulb, PartyPopper, Pill, SkipForward, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { AlarmClock, CircleCheck, CloudOff, Flame, Lightbulb, PartyPopper, Pill, SkipForward, Sprout, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +46,20 @@ export default function HistoryScreen() {
         <View className="items-center gap-3 rounded-[28px] bg-card p-6">
           <Icon as={CloudOff} size={32} className="text-muted-foreground" />
           <Text className="text-center font-semibold">Connect to the internet to see your history.</Text>
+        </View>
+      ) : r.totals.percent === null ? (
+        // Nothing has been due yet (e.g. medicines added today): explain instead of showing empty charts.
+        <View className="items-center gap-3 overflow-hidden rounded-[28px] bg-secondary p-6">
+          <Text importantForAccessibility="no" style={{ position: 'absolute', right: 16, top: -2, fontSize: 60, opacity: 0.16 }}>
+            ✚
+          </Text>
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-card">
+            <Icon as={Sprout} size={32} className="text-foreground" />
+          </View>
+          <Text className="text-center text-2xl font-extrabold text-secondary-foreground">Your progress starts here</Text>
+          <Text className="text-center font-medium text-secondary-foreground">
+            Nothing was due {range === 'weekly' ? 'this week' : 'in the last 30 days'} yet. Each time you tap “I took it”, it will show up here, day by day.
+          </Text>
         </View>
       ) : (
         <>

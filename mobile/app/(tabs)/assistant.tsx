@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartHandshake, MessageCircleQuestion, SendHorizontal, Trash2 } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +21,14 @@ export default function AssistantScreen() {
   const c = useThemeColors();
   const meds = useMedicationList();
   const scrollRef = useRef<ScrollView>(null);
+  // Opened from a medicine page: start with its question typed in (the patient still taps Send).
+  const { ask } = useLocalSearchParams<{ ask?: string }>();
   const [draft, setDraft] = useState('');
+  const [prefilled, setPrefilled] = useState<string>();
+  if (ask && ask !== prefilled) {
+    setPrefilled(ask);
+    setDraft(ask);
+  }
   const [error, setError] = useState<string>();
   const key = ['assistant', user?.id];
 
