@@ -18,6 +18,8 @@ import { doseLogsRoutes } from './modules/doseLogs/doseLogs.routes.js';
 import { filesRoutes } from './modules/files/files.routes.js';
 import { medicationsRoutes } from './modules/medications/medications.routes.js';
 import { MedicationsService } from './modules/medications/medications.service.js';
+import { careRoutes, caregiversRoutes } from './modules/caregivers/caregivers.routes.js';
+import { CaregiversService } from './modules/caregivers/caregivers.service.js';
 import { DrugInfoService } from './modules/druginfo/druginfo.service.js';
 import type { LabelSource } from './modules/druginfo/openfda.js';
 import type { PrescriptionExtractor } from './modules/prescriptions/extractor.js';
@@ -80,6 +82,9 @@ export function createApp({
     requireAuth(config),
     prescriptionsRoutes(new PrescriptionsService(db, storage, medications, extractor, config.jwtAccessSecret)),
   );
+  const caregivers = new CaregiversService(db);
+  v1.use('/caregivers', requireAuth(config), caregiversRoutes(caregivers));
+  v1.use('/care', requireAuth(config), careRoutes(caregivers, config.nodeEnv === 'test' ? 1000 : 10));
   v1.use('/assistant', requireAuth(config), assistantRoutes(new AssistantService(db, llm, '112', new DrugInfoService(db, labels))));
   // Signed-URL access for private images; no bearer token (so <Image> can load them).
   v1.use('/files', filesRoutes(storage, config));
