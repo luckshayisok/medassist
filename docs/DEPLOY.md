@@ -1,5 +1,7 @@
 # Free hosting: Neon (database) + Render (API)
 
+> **Live now:** API https://medassist-api-wjhy.onrender.com · Render service `srv-daqlvnnavr4c738sgr1g` (project *medassist*, Singapore) · Neon project `ancient-night-68983042` (Singapore). Auto-deploys on every push to `main`.
+
 Everything is on free plans.
 
 | Piece | Service | Free plan notes |
@@ -37,11 +39,11 @@ Check that `.env` files are **not** in the commit (they are gitignored).
 2. **New → Blueprint**, then pick the `medassist` repo. Render reads `render.yaml` and creates `medassist-api`.
 3. When asked for `DATABASE_URL`, paste the Neon connection string. `JWT_ACCESS_SECRET` is generated automatically.
 4. Deploy. The first build takes about 3–5 min. On start it runs `prisma migrate deploy`, which creates the tables in Neon.
-5. Open `https://medassist-api.onrender.com/health`. It should show `{"ok":true}`.
+5. Open `https://medassist-api-wjhy.onrender.com/health`. It should show `{"ok":true}`.
    If Render gives the service a different URL, put that URL in `mobile/eas.json` (`preview` and `production` → `EXPO_PUBLIC_API_URL`).
 
 ## 4. Point the app at the hosted API
-- **Development build:** set `EXPO_PUBLIC_API_URL=https://medassist-api.onrender.com` in `mobile/.env`, then restart `npx expo start`.
+- **Development build:** set `EXPO_PUBLIC_API_URL=https://medassist-api-wjhy.onrender.com` in `mobile/.env`, then restart `npx expo start`.
 - **Shareable APK** (works without your PC):
   ```bash
   cd mobile

@@ -12,11 +12,11 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://medassist-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://medassist-api-wjhy.onrender.com" }
     },
     "production": {
       "android": { "buildType": "app-bundle" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://medassist-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://medassist-api-wjhy.onrender.com" }
     }
   },
   "submit": {
