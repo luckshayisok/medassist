@@ -46,6 +46,18 @@ describe('unsafe advice filter', () => {
     expect(containsUnsafeAdvice([{ kind: 'prescription', text: 'Your prescription says to take 2 tablets after dinner.' }])).toBe(false);
     expect(containsUnsafeAdvice([{ kind: 'safety', text: 'Please ask your pharmacist before changing anything.' }])).toBe(false);
   });
+
+  it.each([
+    'Never take a double dose to make up for a missed one.',
+    'Please do not stop taking it without talking to your doctor.',
+    'You should not double your dose.',
+    "Don't take an extra tablet if you miss one.",
+  ])('allows the warning "%s"', (text) => expect(containsUnsafeAdvice([{ kind: 'safety', text }])).toBe(false));
+
+  it('still blocks unsafe advice that follows a warning in another sentence', () => {
+    expect(containsUnsafeAdvice([{ kind: 'general', text: 'Never panic. Take an extra dose tonight.' }])).toBe(true);
+    expect(containsUnsafeAdvice([{ kind: 'general', text: "Don't take it anymore." }])).toBe(true);
+  });
 });
 
 describe('free-tier request budget', () => {

@@ -36,6 +36,21 @@ export function quantityFromDose(dose: string | null): number | null {
   return v > 0 && v <= 20 ? Math.round(v * 2) / 2 : null;
 }
 
+/**
+ * Indian "1-0-1" notation: each number is how many to take at that time. When every non-zero
+ * number is the same ("1-0-1", "½-0-½"), that is the amount per dose. Mixed ("1-0-2") → null.
+ */
+export function quantityFromPattern(frequency: string | null): number | null {
+  const m = frequency?.match(/(?:^|\s)((?:\d+(?:\.\d+)?|½)(?:\s*-\s*(?:\d+(?:\.\d+)?|½)){1,3})(?=\s|$|[,;)])/);
+  if (!m) return null;
+  const parts = m[1]!
+    .split('-')
+    .map((p) => (p.trim() === '½' ? 0.5 : Number(p.trim())))
+    .filter((n) => n > 0);
+  if (!parts.length || parts.some((n) => n !== parts[0]) || parts[0]! > 20) return null;
+  return parts[0]!;
+}
+
 /** "30 days" / "2 weeks" / "1 month" → days. Anything else → null (course left ongoing, flagged). */
 export function daysFromDuration(duration: string | null): number | null {
   if (!duration) return null;
@@ -63,7 +78,7 @@ export function draftToForm(d: DraftMedication, prescriber: string | null, today
   if (!d.name || unclear.has('name')) attention.push({ field: 'name', message: "I couldn't clearly read the medicine name. Please check it against the box or ask your pharmacist." });
   if (!d.strength || unclear.has('strength')) attention.push({ field: 'strength', message: 'The strength is missing or unclear. Please check it on the box.' });
 
-  const qty = quantityFromDose(d.dose);
+  const qty = quantityFromDose(d.dose) ?? quantityFromPattern(d.frequency);
   if (qty === null) attention.push({ field: 'dose', message: 'How much to take each time was not clear. Please check.' });
 
   const times = [...new Set(d.timesOfDay.map((t) => TIME_FOR[t]))].sort();

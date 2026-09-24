@@ -35,15 +35,27 @@ export class NetworkError extends Error {
   }
 }
 
+/** The server was reached (or may have been) but did not answer in time. */
+export class TimeoutError extends NetworkError {
+  constructor() {
+    super();
+    this.message = 'MedAssist is taking too long to answer. Please try again in a moment.';
+  }
+}
+
 let onSessionExpired: (() => void) | undefined;
 /** Registered by the auth store: called when the refresh token is no longer valid. */
 export function setSessionExpiredHandler(fn: () => void) {
   onSessionExpired = fn;
 }
 
-async function rawFetch(path: string, init: RequestInit & { token?: string }) {
+async function rawFetch(path: string, init: RequestInit & { token?: string; timeoutMs?: number }) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, init.timeoutMs ?? TIMEOUT_MS);
   try {
     return await fetch(`${API_URL}${path}`, {
       ...init,
@@ -57,7 +69,7 @@ async function rawFetch(path: string, init: RequestInit & { token?: string }) {
       },
     });
   } catch {
-    throw new NetworkError();
+    throw timedOut ? new TimeoutError() : new NetworkError();
   } finally {
     clearTimeout(timer);
   }
@@ -107,11 +119,13 @@ interface RequestOptions {
   body?: unknown;
   /** Send the stored access token (default true). */
   auth?: boolean;
+  /** Override the default 60 s limit (e.g. AI calls that can be slow on the free tier). */
+  timeoutMs?: number;
 }
 
-export async function api<T>(path: string, { method = 'GET', body, auth = true }: RequestOptions = {}): Promise<T> {
+export async function api<T>(path: string, { method = 'GET', body, auth = true, timeoutMs }: RequestOptions = {}): Promise<T> {
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
-  const init = { method, body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body) };
+  const init = { method, timeoutMs, body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body) };
   let token = auth ? (await loadSession())?.accessToken : undefined;
   let res = await rawFetch(path, { ...init, token });
 

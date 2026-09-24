@@ -1,11 +1,12 @@
 import { Link } from 'expo-router';
-import { Eye, EyeOff, HeartPulse, LogIn } from 'lucide-react-native';
+import { Eye, EyeOff, LogIn } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { FormAlert } from '@/components/common/FormAlert';
 import { FormField } from '@/components/common/FormField';
 import { Screen } from '@/components/common/Screen';
 import { Button } from '@/components/ui/button';
+import { BrandMark } from '@/components/common/BrandMark';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/store/authStore';
@@ -38,9 +39,7 @@ export default function SignInScreen() {
   return (
     <Screen>
       <View className="gap-4 pt-6">
-        <View className="h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-          <Icon as={HeartPulse} size={36} className="text-primary-foreground" />
-        </View>
+        <BrandMark size={64} rounded={18} />
         <Text role="heading" className="text-3xl font-extrabold tracking-tight">
           Welcome back
         </Text>

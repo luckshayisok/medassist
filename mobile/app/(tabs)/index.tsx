@@ -7,6 +7,7 @@ import { DoseRow } from '@/components/medication/DoseRow';
 import { EmptyMedicines } from '@/components/medication/EmptyMedicines';
 import { NextDoseCard } from '@/components/medication/NextDoseCard';
 import { groupByPeriod, PeriodHeader } from '@/components/medication/PeriodHeader';
+import { PendingPrescriptions } from '@/components/prescription/PendingPrescriptions';
 import { RemindersOffBanner } from '@/components/reminder/RemindersCard';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -101,6 +102,8 @@ export default function HomeScreen() {
             </View>
           </View>
         ) : null}
+
+        <PendingPrescriptions />
 
         {medications.length > 0 ? <RemindersOffBanner /> : null}
 

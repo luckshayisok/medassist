@@ -19,6 +19,8 @@ export function filesRoutes(storage: Storage, config: AppConfig) {
     res.set({
       'Content-Type': 'image/jpeg',
       'Cache-Control': 'private, max-age=3600',
+      // The signed, expiring URL is the access check; let the web app show it as an <img>.
+      'Cross-Origin-Resource-Policy': 'cross-origin',
     });
     res.send(data);
   });

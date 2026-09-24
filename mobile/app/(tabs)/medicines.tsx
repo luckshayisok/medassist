@@ -4,6 +4,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyMedicines } from '@/components/medication/EmptyMedicines';
 import { MedicationCard } from '@/components/medication/MedicationCard';
+import { PendingPrescriptions } from '@/components/prescription/PendingPrescriptions';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -52,6 +53,8 @@ export default function MedicinesScreen() {
             <Text>Add medicine</Text>
           </Button>
         ) : null}
+
+        <PendingPrescriptions />
 
         {query.isError && meds.length > 0 ? (
           <View className="flex-row items-center gap-3 rounded-2xl bg-warning-soft p-4">

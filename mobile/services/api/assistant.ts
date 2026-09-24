@@ -24,6 +24,8 @@ export const assistantApi = {
     api<{ conversationId: string; message: ChatMessage }>('/assistant/chat', {
       method: 'POST',
       body: conversationId ? { message, conversationId } : { message },
+      // The server may try several AI models before answering.
+      timeoutMs: 100_000,
     }),
   clear: () => api<void>('/assistant/history', { method: 'DELETE' }),
 };

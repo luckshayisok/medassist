@@ -1,6 +1,6 @@
 import type { DraftMedication } from '../../types/prescription';
 import { validate } from '../medicationForm';
-import { daysFromDuration, draftToForm, quantityFromDose, unitFromForm } from '../prescriptionDraft';
+import { daysFromDuration, draftToForm, quantityFromDose, quantityFromPattern, unitFromForm } from '../prescriptionDraft';
 
 const draft = (patch: Partial<DraftMedication> = {}): DraftMedication => ({
   id: 'd1', name: 'Metformin', strength: '500 mg', form: 'tablet', dose: '1 tablet', frequency: '1-0-1',
@@ -58,4 +58,18 @@ describe('draftToForm', () => {
     expect(attention.map((a) => a.field)).toEqual(['name', 'times', 'foodTiming']);
     expect(Object.keys(validate(form)).sort()).toEqual(['foodTiming', 'name', 'times']);
   });
+});
+
+describe('quantityFromPattern', () => {
+  it.each([
+    ['1-0-1', 1],
+    ['1-1-1 after food', 1],
+    ['0-0-1', 1],
+    ['½-0-½', 0.5],
+    ['2-0-2', 2],
+    ['1-0-2', null],
+    ['twice daily', null],
+    ['0-0-0', null],
+    [null, null],
+  ])('%s → %s', (text, want) => expect(quantityFromPattern(text)).toBe(want));
 });

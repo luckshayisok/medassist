@@ -3,6 +3,7 @@ import { ArrowRight, BellRing, BookOpenText, HeartPulse } from 'lucide-react-nat
 import { View } from 'react-native';
 import { Screen } from '@/components/common/Screen';
 import { Button } from '@/components/ui/button';
+import { BrandMark } from '@/components/common/BrandMark';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { APP_NAME, DISCLAIMER } from '@/constants/app';
@@ -17,9 +18,7 @@ export default function WelcomeScreen() {
   return (
     <Screen className="justify-between">
       <View className="gap-6 pt-4">
-        <View className="h-20 w-20 items-center justify-center rounded-3xl bg-primary">
-          <Icon as={HeartPulse} size={44} className="text-primary-foreground" />
-        </View>
+        <BrandMark size={80} rounded={24} />
         <View className="gap-2">
           <Text role="heading" className="text-3xl font-extrabold tracking-tight">
             Welcome to {APP_NAME}

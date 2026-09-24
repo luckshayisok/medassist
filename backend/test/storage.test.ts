@@ -42,6 +42,7 @@ describe('DatabaseStorage (used on Render free, which has no persistent disk)', 
     const file = await api.get(up.body.imageUrl);
     expect(file.status).toBe(200);
     expect(file.headers['content-type']).toBe('image/jpeg');
+    expect(file.headers['cross-origin-resource-policy']).toBe('cross-origin');
 
     await api.delete(`/api/v1/medications/${med.id}/image`).set(auth);
     expect(await t.db.storedFile.count()).toBe(0);

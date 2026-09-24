@@ -57,8 +57,24 @@ const UNSAFE_ADVICE: RegExp[] = [
   /\byou (have|probably have|may have|might have|likely have) (diabetes|cancer|an infection|a heart|high blood|kidney|liver)/i,
 ];
 
+// A warning like "Never take a double dose" or "Do not stop taking it" is safe advice. Only a match
+// with no negation just before it (in the same sentence) counts as unsafe.
+const NEGATED = /\b(never|not|don'?t|do not|should ?n'?o?t|must ?n'?o?t|avoid|no need to|please don'?t)\b[^.!?]{0,20}$/i;
+
+function unsafeText(text: string): boolean {
+  return UNSAFE_ADVICE.some((pattern) => {
+    const re = new RegExp(pattern.source, 'gi');
+    for (const m of text.matchAll(re)) {
+      const before = text.slice(0, m.index).split(/[.!?]\s/).pop() ?? '';
+      // "don't take it" is itself a stop instruction, so it is never excused by its own "don't".
+      if (!NEGATED.test(before)) return true;
+    }
+    return false;
+  });
+}
+
 export function containsUnsafeAdvice(sections: Section[]): boolean {
-  return sections.some((s) => s.kind !== 'prescription' && UNSAFE_ADVICE.some((p) => p.test(s.text)));
+  return sections.some((s) => s.kind !== 'prescription' && unsafeText(s.text));
 }
 
 export const SAFE_FALLBACK: Section[] = [

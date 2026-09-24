@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   CircleAlert,
   CircleCheck,
+  Clock,
   FileText,
   Keyboard,
   Pencil,
@@ -12,6 +13,7 @@ import {
   Square,
   SquareCheck,
   TriangleAlert,
+  UtensilsCrossed,
   X,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,6 +24,7 @@ import { FormAlert } from '@/components/common/FormAlert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { prescriptionsKey } from '@/components/prescription/PendingPrescriptions';
 import { medicationsKey } from '@/hooks/useMedications';
 import { cn } from '@/lib/utils';
 import { resolveFileUrl } from '@/services/api/client';
@@ -81,6 +84,7 @@ export default function PrescriptionReview() {
       );
       clear(id);
       await qc.invalidateQueries({ queryKey: medicationsKey(userId) });
+      void qc.invalidateQueries({ queryKey: prescriptionsKey(userId) });
       router.replace('/medicines');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add the medicines. Please try again.');
@@ -264,11 +268,19 @@ function DraftCard({ item, index, source, errors, onToggle, prescriptionId }: { 
         </View>
       ) : null}
 
-      <View className="gap-1">
-        <Text className="font-medium">
-          ⏰ {f.times.length ? f.times.map((t) => formatTime(atLocalTime(today, t))).join(', ') : 'Times not set'}
-        </Text>
-        <Text className="font-medium">🍽 {f.foodTiming ? FOOD_TIMING_LABEL[f.foodTiming] : 'Food timing not set'}</Text>
+      <View className="flex-row flex-wrap gap-2">
+        <View className={cn('flex-row items-center gap-1.5 rounded-full px-3 py-1.5', f.times.length ? 'bg-blush' : 'bg-muted')}>
+          <Icon as={Clock} size={16} className={f.times.length ? 'text-blush-foreground' : 'text-muted-foreground'} />
+          <Text className={cn('text-sm font-bold', f.times.length ? 'text-blush-foreground' : 'text-muted-foreground')}>
+            {f.times.length ? f.times.map((t) => formatTime(atLocalTime(today, t))).join(' · ') : 'Times not set'}
+          </Text>
+        </View>
+        <View className={cn('flex-row items-center gap-1.5 rounded-full px-3 py-1.5', f.foodTiming ? 'bg-secondary' : 'bg-muted')}>
+          <Icon as={UtensilsCrossed} size={16} className={f.foodTiming ? 'text-secondary-foreground' : 'text-muted-foreground'} />
+          <Text className={cn('text-sm font-bold', f.foodTiming ? 'text-secondary-foreground' : 'text-muted-foreground')}>
+            {f.foodTiming ? FOOD_TIMING_LABEL[f.foodTiming] : 'Food timing not set'}
+          </Text>
+        </View>
       </View>
 
       {item.include && !item.checked

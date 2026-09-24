@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HeartHandshake, MessageCircleQuestion, SendHorizontal, Trash2 } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AssistantMessage, UserBubble } from '@/components/assistant/AssistantMessage';
@@ -38,8 +38,10 @@ export default function AssistantScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: key }).then(() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)),
-    onError: (e) => {
+    onError: (e, text) => {
       setError(e instanceof Error ? e.message : 'Could not send. Please try again.');
+      // Give the question back so it doesn't have to be typed again.
+      setDraft((d) => d || text);
       void qc.invalidateQueries({ queryKey: key });
     },
   });
@@ -118,12 +120,7 @@ export default function AssistantScreen() {
               <AssistantMessage key={m.id} message={m} onFollowUp={submit} showFollowUps={m.id === lastAssistant?.id && !send.isPending} />
             ),
           )}
-          {send.isPending ? (
-            <View className="flex-row items-center gap-3 self-start rounded-3xl bg-card px-4 py-3" accessibilityLiveRegion="polite">
-              <ActivityIndicator />
-              <Text className="font-semibold text-muted-foreground">Thinking…</Text>
-            </View>
-          ) : null}
+          {send.isPending ? <ThinkingBubble /> : null}
           <FormAlert message={error} />
         </ScrollView>
 
@@ -159,3 +156,20 @@ export default function AssistantScreen() {
   );
 }
 
+/** "Thinking…", then an honest note if the free AI service is slow. */
+function ThinkingBubble() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <View className="max-w-[85%] flex-row items-center gap-3 self-start rounded-3xl bg-card px-4 py-3" accessibilityLiveRegion="polite">
+      <ActivityIndicator />
+      <View className="flex-1">
+        <Text className="font-semibold text-muted-foreground">Thinking…</Text>
+        {slow ? <Text className="text-sm text-muted-foreground">Still working on it. This can take up to a minute.</Text> : null}
+      </View>
+    </View>
+  );
+}

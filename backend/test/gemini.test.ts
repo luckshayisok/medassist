@@ -27,6 +27,25 @@ describe('GeminiClient', () => {
     expect(call).toHaveBeenCalledTimes(3);
   });
 
+  it('gives each model a time limit and moves on after a timeout', async () => {
+    const call = vi.fn<GenerateFn>().mockRejectedValueOnce(new Error('Request timed out')).mockResolvedValueOnce({ text: 'ok' });
+    await expect(client(call).generate({ contents: 'hi', config: { temperature: 0 } })).resolves.toBe('ok');
+    expect(call.mock.calls.map((c) => c[0].model)).toEqual(['m1', 'm2']);
+    const cfg = call.mock.calls[0]![0].config!;
+    expect(cfg.temperature).toBe(0);
+    expect(cfg.httpOptions?.timeout).toBeGreaterThan(0);
+    expect(cfg.httpOptions?.timeout).toBeLessThanOrEqual(30_000);
+  });
+
+  it('gives the fast model a second try after a pause', async () => {
+    const call = vi.fn<GenerateFn>().mockRejectedValueOnce(apiError(503)).mockRejectedValueOnce(apiError(503)).mockResolvedValueOnce({ text: 'ok' });
+    const c = new GeminiClient('k', new RequestBudget(100, 1000), ['fast', 'other', 'fast', 'lite'], call);
+    const t = Date.now();
+    await expect(c.generate({ contents: 'hi' })).resolves.toBe('ok');
+    expect(call.mock.calls.map((x) => x[0].model)).toEqual(['fast', 'other', 'fast']);
+    expect(Date.now() - t).toBeGreaterThanOrEqual(1_400);
+  });
+
   it('treats an empty (filtered) response as unanswerable', async () => {
     const call = vi.fn<GenerateFn>().mockResolvedValue({ text: '' });
     await expect(client(call).generate({ contents: 'hi' })).rejects.toBeInstanceOf(LlmError);

@@ -1,10 +1,13 @@
 import { ApiError, GoogleGenAI, type GenerateContentParameters } from '@google/genai';
+import { logger } from './logger.js';
 
 /**
  * Tried in order. Free-tier Flash models are often briefly overloaded (503), so we fall through
- * to the next one instead of failing. Older IDs (e.g. gemini-2.5-flash) are closed to new keys.
+ * to the next one instead of failing. The fast model gets a second chance (after a short pause)
+ * before the slower lite model. Older IDs (e.g. gemini-2.5-flash) are closed to new keys.
  */
-export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.6-flash', 'gemini-flash-lite-latest'];
+const RETRY_PAUSE_MS = 1_500;
 
 export class LlmError extends Error {
   constructor(
@@ -51,6 +54,9 @@ export interface GenerateFn {
 
 // Model-side conditions where another model may succeed.
 const TRY_NEXT = new Set([404, 500, 503]);
+/** One model gets this long before we move on; the whole chain stops after TOTAL_MS. */
+const ATTEMPT_MS = 30_000;
+const TOTAL_MS = 75_000;
 
 export class GeminiClient implements LlmClient {
   private readonly call: GenerateFn;
@@ -72,9 +78,16 @@ export class GeminiClient implements LlmClient {
   async generate(params: Omit<GenerateContentParameters, 'model'>): Promise<string> {
     if (!this.budget.take()) throw new LlmError('The assistant is busy right now. Please try again in a minute.', true);
     let last: unknown;
-    for (const model of this.models) {
+    const deadline = Date.now() + TOTAL_MS;
+    for (const [i, model] of this.models.entries()) {
+      if (this.models.indexOf(model) < i) await sleep(RETRY_PAUSE_MS); // second try of the same model
+      const remaining = deadline - Date.now();
+      if (remaining < 5_000) break;
+      // The last model is the final chance, so it may use all the time left.
+      const isLast = i === this.models.length - 1;
+      const timeout = isLast ? remaining : Math.min(params.config?.httpOptions?.timeout ?? ATTEMPT_MS, remaining);
       try {
-        const res = await this.call({ ...params, model });
+        const res = await this.call({ ...params, model, config: { ...params.config, httpOptions: { ...params.config?.httpOptions, timeout } } });
         if (!res.text) {
           // Empty text usually means a safety filter blocked the response.
           throw new LlmError('This request could not be answered. Please rephrase, or ask your doctor or pharmacist.', false);
@@ -83,13 +96,21 @@ export class GeminiClient implements LlmClient {
       } catch (e) {
         if (e instanceof LlmError) throw e;
         last = e;
-        if (e instanceof ApiError && TRY_NEXT.has(e.status)) continue;
-        break;
+        // Never log prompts (they hold health data); status and a short reason are enough.
+        logger.warn({ model, status: e instanceof ApiError ? e.status : undefined, reason: String((e as Error)?.message ?? e).slice(0, 160) }, 'Gemini attempt failed');
+        if (e instanceof ApiError) {
+          if (TRY_NEXT.has(e.status)) continue;
+          break;
+        }
+        // Timeouts and network hiccups: another model (or endpoint) may answer.
+        continue;
       }
     }
     throw toLlmError(last);
   }
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function toLlmError(e: unknown): LlmError {
   if (e instanceof ApiError) {

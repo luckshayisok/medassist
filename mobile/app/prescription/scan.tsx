@@ -1,13 +1,16 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Camera, CircleCheck, ImagePlus, Lightbulb, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { prescriptionsKey } from '@/components/prescription/PendingPrescriptions';
 import { FormAlert } from '@/components/common/FormAlert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { prescriptionsApi } from '@/services/api/prescriptions';
+import { useAuth } from '@/store/authStore';
 import { pickPhoto, PRESCRIPTION, takePhoto, type PhotoResult } from '@/services/camera/photo';
 
 const TIPS = ['Lay the paper flat in good light', 'Fit the whole page in the photo', 'Hold still so the writing is sharp'];
@@ -16,6 +19,8 @@ export default function ScanPrescription() {
   const insets = useSafeAreaInsets();
   const [uri, setUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.user?.id);
   const [error, setError] = useState<string>();
 
   const choose = async (fn: () => Promise<PhotoResult>) => {
@@ -36,6 +41,7 @@ export default function ScanPrescription() {
     setError(undefined);
     try {
       const p = await prescriptionsApi.upload(uri);
+      void qc.invalidateQueries({ queryKey: prescriptionsKey(userId) });
       router.replace({ pathname: '/prescription/[id]', params: { id: p.id } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not upload the photo. Please try again.');
