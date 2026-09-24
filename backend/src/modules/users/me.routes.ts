@@ -79,9 +79,10 @@ export function meRoutes(db: Db, storage: Storage) {
       throw unauthorized('Password is incorrect', 'INVALID_CREDENTIALS');
     }
     // Cascades remove profile, tokens, medications, logs, prescriptions, chats and relationships.
-    const images = await db.medication.findMany({ where: { patientId: userId, imageKey: { not: null } }, select: { imageKey: true } });
+    const medImages = await db.medication.findMany({ where: { patientId: userId, imageKey: { not: null } }, select: { imageKey: true } });
+    const rxImages = await db.prescription.findMany({ where: { patientId: userId }, select: { imageKey: true } });
+    const images = [...medImages, ...rxImages];
     await db.user.delete({ where: { id: userId } });
-    // Phase 7: prescription images too.
     await Promise.all(images.map((m) => storage.delete(m.imageKey!)));
     res.status(204).end();
   });

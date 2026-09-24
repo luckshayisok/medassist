@@ -13,6 +13,11 @@ const EnvSchema = z.object({
   STORAGE_DIR: z.string().default('./uploads'),
   /** 'db' keeps photos in Postgres — use on hosts without a persistent disk (Render free). */
   STORAGE_DRIVER: z.enum(['local', 'db']).default('local'),
+  /** Enables prescription reading and the assistant (Gemini). Without it both fail politely. */
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  /** Server-wide AI call budget — defaults sized for a free-tier key. */
+  GEMINI_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(8),
+  GEMINI_REQUESTS_PER_DAY: z.coerce.number().int().positive().default(200),
 });
 
 export type AppConfig = {
@@ -25,6 +30,9 @@ export type AppConfig = {
   corsOrigins: string[];
   storageDir: string;
   storageDriver: 'local' | 'db';
+  geminiApiKey?: string;
+  geminiPerMinute: number;
+  geminiPerDay: number;
   /** Requests per window on /auth routes, per IP. */
   authRateLimit: number;
 };
@@ -46,6 +54,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     corsOrigins: e.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
     storageDir: e.STORAGE_DIR,
     storageDriver: e.STORAGE_DRIVER,
+    geminiApiKey: e.GEMINI_API_KEY,
+    geminiPerMinute: e.GEMINI_REQUESTS_PER_MINUTE,
+    geminiPerDay: e.GEMINI_REQUESTS_PER_DAY,
     authRateLimit: 20,
   };
 }

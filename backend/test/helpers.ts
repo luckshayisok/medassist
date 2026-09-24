@@ -8,6 +8,8 @@ import { createApp } from '../src/app.js';
 import type { AppConfig } from '../src/config/env.js';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { LocalDiskStorage } from '../src/lib/storage.js';
+import type { PrescriptionExtractor } from '../src/modules/prescriptions/extractor.js';
+import type { LlmClient } from '../src/lib/gemini.js';
 
 export const testConfig: AppConfig = {
   nodeEnv: 'test',
@@ -19,6 +21,8 @@ export const testConfig: AppConfig = {
   corsOrigins: [],
   storageDir: '',
   storageDriver: 'local',
+  geminiPerMinute: 8,
+  geminiPerDay: 200,
   authRateLimit: 1000,
 };
 
@@ -42,10 +46,10 @@ export async function createTestDb() {
   };
 }
 
-export function makeApi(db: PrismaClient, config: Partial<AppConfig> = {}) {
+export function makeApi(db: PrismaClient, config: Partial<AppConfig> = {}, extractor: PrescriptionExtractor | null = null, llm: LlmClient | null = null) {
   const storageDir = mkdtempSync(join(tmpdir(), 'medassist-test-'));
   const storage = new LocalDiskStorage(storageDir);
-  const agent = request(createApp({ db, config: { ...testConfig, storageDir, ...config }, storage }));
+  const agent = request(createApp({ db, config: { ...testConfig, storageDir, ...config }, storage, extractor, llm }));
   return Object.assign(agent, { storage, storageDir });
 }
 

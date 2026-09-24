@@ -11,6 +11,8 @@ import { createApp } from './app.js';
 import { PrismaClient } from './generated/prisma/client.js';
 import { logger } from './lib/logger.js';
 import { LocalDiskStorage } from './lib/storage.js';
+import { GeminiClient, RequestBudget } from './lib/gemini.js';
+import { DemoExtractor, GeminiExtractor } from './modules/prescriptions/extractor.js';
 import { tmpdir } from 'node:os';
 
 const pg = new PGlite();
@@ -20,10 +22,14 @@ for (const m of readdirSync(dir).filter((d) => !d.endsWith('.toml')).sort()) {
 }
 
 const db = new PrismaClient({ adapter: new PrismaPGlite(pg) });
+const devLlm = process.env.GEMINI_API_KEY ? new GeminiClient(process.env.GEMINI_API_KEY, new RequestBudget(8, 200)) : null;
 const port = Number(process.env.PORT ?? 4000);
 const app = createApp({
   db,
   storage: new LocalDiskStorage(join(tmpdir(), 'medassist-dev-uploads')),
+  // Real Gemini if a key is set; otherwise a clearly-fake sample reader so the flow can be tried.
+  extractor: devLlm ? new GeminiExtractor(devLlm) : new DemoExtractor(),
+  llm: devLlm,
   config: {
     nodeEnv: 'development',
     port,
@@ -34,6 +40,8 @@ const app = createApp({
     corsOrigins: ['http://localhost:8081', 'http://localhost:8090'],
     storageDir: join(tmpdir(), 'medassist-dev-uploads'),
     storageDriver: 'local',
+    geminiPerMinute: 8,
+    geminiPerDay: 200,
     authRateLimit: 100,
   },
 });

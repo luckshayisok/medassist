@@ -35,6 +35,7 @@ model User {
   medicationLogs      MedicationLog[]         @relation("patientLogs")
   loggedMedicationLog MedicationLog[]         @relation("loggedBy")
   chatMessages        ChatMessage[]
+  chatsAboutMe        ChatMessage[]           @relation("chatPatient")
   pushTokens          PushToken[]
 }
 
@@ -212,16 +213,21 @@ enum PrescriptionStatus {
 }
 
 model Prescription {
-  id           String             @id @default(uuid()) @db.Uuid
-  patientId    String             @db.Uuid
-  imageKey     String
-  ocrText      String?
-  status       PrescriptionStatus @default(UPLOADED)
-  errorMessage String?
-  verifiedById String?            @db.Uuid
-  verifiedAt   DateTime?          @db.Timestamptz(3)
-  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+  id             String             @id @default(uuid()) @db.Uuid
+  patientId      String             @db.Uuid
+  imageKey       String
+  ocrText        String?
+  status         PrescriptionStatus @default(UPLOADED)
+  errorMessage   String?
+  /// Read from the prescription (never inferred).
+  prescriberName String?            @db.VarChar(120)
+  prescribedOn   String?            @db.VarChar(40)
+  /// Things the reader flagged for the patient (illegible parts, missing info).
+  warnings       String[]
+  verifiedById   String?            @db.Uuid
+  verifiedAt     DateTime?          @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
 
   patient     User                     @relation(fields: [patientId], references: [id], onDelete: Cascade)
   medications PrescriptionMedication[]
@@ -230,21 +236,30 @@ model Prescription {
 }
 
 model PrescriptionMedication {
-  id               String   @id @default(uuid()) @db.Uuid
-  prescriptionId   String   @db.Uuid
-  name             String?  @db.VarChar(120)
-  dosage           String?  @db.VarChar(60)
-  frequency        String?  @db.VarChar(120)
-  timing           String?  @db.VarChar(120)
-  foodInstructions String?  @db.VarChar(500)
-  duration         String?  @db.VarChar(120)
-  doctorNotes      String?  @db.VarChar(1000)
-  sourceText       String?  @db.VarChar(1000)
+  id               String      @id @default(uuid()) @db.Uuid
+  prescriptionId   String      @db.Uuid
+  name             String?     @db.VarChar(120)
+  dosage           String?     @db.VarChar(60)
+  frequency        String?     @db.VarChar(120)
+  timing           String?     @db.VarChar(120)
+  foodInstructions String?     @db.VarChar(500)
+  duration         String?     @db.VarChar(120)
+  doctorNotes      String?     @db.VarChar(1000)
+  /// e.g. "1 tablet" — as written.
+  dose             String?     @db.VarChar(60)
+  /// e.g. "tablet", "syrup".
+  form             String?     @db.VarChar(40)
+  /// Only when the notation is explicit (e.g. "1-0-1" → morning, night). Empty = not stated clearly.
+  timesOfDay       String[]
+  foodTiming       FoodTiming?
+  /// Order on the paper, so the review screen matches what the patient sees.
+  position         Int         @default(0)
+  sourceText       String?     @db.VarChar(1000)
   /// 0–1 overall confidence from the extractor.
-  confidence       Float    @default(0)
+  confidence       Float       @default(0)
   /// Field names the model could not read clearly. Never auto-filled.
   unclearFields    String[]
-  verified         Boolean  @default(false)
+  verified         Boolean     @default(false)
 
   prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   medication   Medication?
@@ -262,6 +277,8 @@ enum ChatRole {
 model ChatMessage {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @db.Uuid
+  /// Whose medicines the chat is about (the user themself, or a patient a caregiver looks after).
+  patientId      String?  @db.Uuid
   conversationId String   @db.Uuid
   role           ChatRole
   message        String   @db.VarChar(8000)
@@ -269,10 +286,11 @@ model ChatMessage {
   citations      Json     @default("[]")
   createdAt      DateTime @default(now()) @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patient User? @relation("chatPatient", fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
-  @@index([userId])
+  @@index([userId, patientId, createdAt])
 }
 
 // ─── File storage ────────────────────────────────────────────────────────────

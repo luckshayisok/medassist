@@ -5,19 +5,37 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { AppConfig } from './config/env.js';
 import { logger } from './lib/logger.js';
+import type { LlmClient } from './lib/gemini.js';
 import type { Db } from './lib/prisma.js';
 import type { Storage } from './lib/storage.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { adherenceRoutes } from './modules/adherence/adherence.routes.js';
+import { assistantRoutes } from './modules/assistant/assistant.routes.js';
+import { AssistantService } from './modules/assistant/assistant.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { doseLogsRoutes } from './modules/doseLogs/doseLogs.routes.js';
 import { filesRoutes } from './modules/files/files.routes.js';
 import { medicationsRoutes } from './modules/medications/medications.routes.js';
 import { MedicationsService } from './modules/medications/medications.service.js';
+import type { PrescriptionExtractor } from './modules/prescriptions/extractor.js';
+import { prescriptionsRoutes } from './modules/prescriptions/prescriptions.routes.js';
+import { PrescriptionsService } from './modules/prescriptions/prescriptions.service.js';
 import { meRoutes } from './modules/users/me.routes.js';
 
-export function createApp({ db, config, storage }: { db: Db; config: AppConfig; storage: Storage }) {
+export function createApp({
+  db,
+  config,
+  storage,
+  extractor = null,
+  llm = null,
+}: {
+  db: Db;
+  config: AppConfig;
+  storage: Storage;
+  extractor?: PrescriptionExtractor | null;
+  llm?: LlmClient | null;
+}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -41,6 +59,9 @@ export function createApp({ db, config, storage }: { db: Db; config: AppConfig; 
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
+  app.get('/', (_req, res) => {
+    res.json({ service: 'MedAssist API', status: 'ok', health: '/health', api: '/api/v1' });
+  });
 
   const v1 = express.Router();
   v1.use('/auth', authRoutes(db, config));
@@ -49,6 +70,12 @@ export function createApp({ db, config, storage }: { db: Db; config: AppConfig; 
   v1.use('/medications', requireAuth(config), medicationsRoutes(medications));
   v1.use('/dose-logs', requireAuth(config), doseLogsRoutes(db));
   v1.use('/adherence', requireAuth(config), adherenceRoutes(db));
+  v1.use(
+    '/prescriptions',
+    requireAuth(config),
+    prescriptionsRoutes(new PrescriptionsService(db, storage, medications, extractor, config.jwtAccessSecret)),
+  );
+  v1.use('/assistant', requireAuth(config), assistantRoutes(new AssistantService(db, llm)));
   // Signed-URL access for private images; no bearer token (so <Image> can load them).
   v1.use('/files', filesRoutes(storage, config));
   app.use('/api/v1', v1);
